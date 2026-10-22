@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+cache/
+images.tar.gz
+data/selected/
+features.npz
+.DS_Store
+Thumbs.db
+data/
+results/
+manifests/
