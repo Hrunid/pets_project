@@ -59,7 +59,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Activation is optional. The environment's interpreter can be used directly, for example `.venv/bin/python -m pip install -r requirements.txt` on macOS/Linux or `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` on Windows. This also avoids changing PowerShell execution policies.
+Activation is optional. The environment's interpreter can be used directly, for example `.venv/bin/python -m pip install -r requirements.txt` on macOS/Linux or `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` on Windows. This also avoids changing PowerShell execution policies. Install dependencies once before running the experiment; `main.py` does not install or update packages.
 
 For feature extraction, install the additional dependencies:
 
@@ -81,15 +81,13 @@ If the archive is absent, the script downloads it from Oxford (approximately 755
 
 ## Running the experiment
 
-With original images, saved manifests, augmentations, and `features.npz` available:
+With original images, saved manifests, augmentations, and `features.npz` available, activate the virtual environment and run:
 
 ```text
-python experiment.py
-python make_report.py
-python audit_results.py
+python main.py
 ```
 
-The default experiment validates the inputs, loads the cached features, and trains all nine classifiers. It does not require PyTorch. Reporting and auditing can also be run independently on the supplied results without the original JPEG files.
+`main.py` runs `experiment.py`, `make_report.py`, and `audit_results.py` in order, using the same Python interpreter as the one running `main.py`. It stops and reports an error if any step fails. The default experiment validates the inputs, loads the cached features, and trains all nine classifiers. It does not require PyTorch. Reporting and auditing can also be run independently on the supplied results without the original JPEG files.
 
 To recompute image features:
 
@@ -103,7 +101,7 @@ To regenerate splits and augmentations and recompute features:
 python experiment.py --rebuild-data --recompute-features
 ```
 
-Both commands require `requirements-features.txt`. Run `make_report.py` and `audit_results.py` afterwards to update the report and validate the new results. Commands overwrite the corresponding generated outputs in `results/` and `report.md`; preserve a copy when comparing separate runs.
+Both commands require `requirements-features.txt`. Run `python main.py` afterwards to rerun the cached-feature experiment, update the report, and validate the results. Commands overwrite the corresponding generated outputs in `results/` and `report.md`; preserve a copy when comparing separate runs.
 
 ## Recorded results
 
@@ -123,6 +121,7 @@ These results apply to the chosen data subset, transformations, and model. Each 
 
 | Path | Purpose |
 | --- | --- |
+| `main.py` | Run the experiment, generate the report, and audit results in sequence |
 | `experiment.py` | Data selection, splits, augmentation, feature extraction, training, and evaluation |
 | `make_report.py` | Report, summary statistics, and comparison figure generation |
 | `audit_results.py` | Independent checks of saved predictions, metrics, and training observations |
