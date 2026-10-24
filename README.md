@@ -155,3 +155,5 @@ Exact duplicate detection does not rule out near-duplicate photographs or repeat
 - [torchvision ResNet-18 documentation](https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.resnet18.html)
 
 Image attribution and the dataset's CC BY-SA 4.0 terms are described in `DATA_LICENSE.md`. These data terms do not establish a separate license for the project source code.
+
+## Author: Wiktor Wdowczyk
