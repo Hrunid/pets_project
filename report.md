@@ -67,3 +67,5 @@ Przykłady: oryginały u góry, augmentacje poniżej.
 ![Przykłady augmentacji](results/augmentation_examples.jpg)
 
 Źródła, licencja i protokół: `protocol.md` oraz `DATA_LICENSE.md`.
+
+## Autor: Wiktor Wdowczyk
