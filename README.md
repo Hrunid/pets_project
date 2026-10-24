@@ -103,6 +103,47 @@ python experiment.py --rebuild-data --recompute-features
 
 Both commands require `requirements-features.txt`. Run `python main.py` afterwards to rerun the cached-feature experiment, update the report, and validate the results. Commands overwrite the corresponding generated outputs in `results/` and `report.md`; preserve a copy when comparing separate runs.
 
+## Meeting 2 — Text-to-Image Generation
+
+Meeting 2 is a separate workflow; `main.py` continues to run the completed Meeting 1 experiment. It follows the course template's 110-image pools, fixed generation seeds, 55-image synthetic budget, validation-first pool selection, and test-only-after-selection rule. It retains this repository's frozen ResNet-18 feature extractor and logistic regression rather than replacing the Meeting 1 classifier with the template's fine-tuned EfficientNet.
+
+Install the additional dependencies once:
+
+```text
+python -m pip install -r requirements-meeting2.txt
+```
+
+Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a hosted GPU environment; Internet access and permission to download the Stable Diffusion 1.5 weights from Hugging Face are required. If the ResNet-18 weights are not already cached, training also downloads them. Generation refuses to run on CPU unless explicitly opted in with `--allow-cpu`. `--low-vram` enables memory-saving options on supported CUDA GPUs.
+
+1. Generate the base pool and three controlled variations. Write the prompt(s) yourself; repeat `--prompt` to cycle through the same prompts in every pool. The base uses 30 steps and guidance 7.5; each other pool changes only guidance or steps.
+
+   ```text
+   python meeting2.py generate --prompt "Photorealistic photograph of a single Egyptian Mau cat with a short silver spotted coat and green eyes, natural proportions, soft daylight."
+   ```
+
+   This creates `m2-base`, `m2-guidance-2`, `m2-guidance-15`, and `m2-steps-10` under `pools/`, with 110 attempts per pool, a settings file, a JSONL manifest, and a contact sheet. The generator records errors and safety-blocked attempts instead of silently discarding them. Resume with the same command and settings; existing attempt records are kept.
+
+2. Review each `pools/<name>/contact-sheet.jpg`. Note wrong breeds/coats, implausible anatomy, illustration-like images, repeated poses or backgrounds, and failed or safety-blocked attempts. Do not remove low-quality images or their manifest records.
+
+3. Train the real-only baseline and all generated pools, then inspect the validation report and paired comparison plot:
+
+   ```text
+   python meeting2.py train
+   python meeting2.py report
+   ```
+
+   Each pool adds 55 randomly selected, usable images per split. Five paired holdout seeds are used; the first three reuse the Meeting 1 seeds and the other two extend the comparison. Since logistic regression is deterministic, these are five data splits rather than five random model initializations. The existing data has 20 Egyptian Mau training images, so adding 55 produces 75 minority observations; this differs from the template's 15+55 balance. The baseline is refit on the same five splits for paired comparisons.
+
+4. Choose one pool using **validation results and contact-sheet review**, and provide your justification when evaluating its test set. For example:
+
+   ```text
+   python meeting2.py test --pool m2-guidance-2 --reason "Highest validation Mau recall without reducing macro-F1; contact sheet shows mostly plausible spotted cats."
+   ```
+
+   Do not use test results to choose or change the pool. This command evaluates only the selected pool and its matched real-only baseline, then updates `results/meeting2/report.md` and the test comparison plot.
+
+Generated pools, manifests, feature caches, and results are local experiment outputs and are ignored by Git. Keep them when sharing the completed experiment. `results/meeting2/report.md` contains validation tables, paired changes, contact-sheet links, and (after selection) test results; `pools/<name>/manifest.jsonl` records every generation attempt and its parameters.
+
 ## Recorded results
 
 Mean test performance across the three recorded iterations:
@@ -122,11 +163,13 @@ These results apply to the chosen data subset, transformations, and model. Each 
 | Path | Purpose |
 | --- | --- |
 | `main.py` | Run the experiment, generate the report, and audit results in sequence |
+| `meeting2.py` | Generate Meeting 2 pools, train validation comparisons, and test a selected pool |
 | `experiment.py` | Data selection, splits, augmentation, feature extraction, training, and evaluation |
 | `make_report.py` | Report, summary statistics, and comparison figure generation |
 | `audit_results.py` | Independent checks of saved predictions, metrics, and training observations |
 | `requirements.txt` | Dependencies for cached-feature experiments and analysis |
 | `requirements-features.txt` | Additional feature-extraction dependencies |
+| `requirements-meeting2.txt` | Diffusion-generation and image-feature dependencies for Meeting 2 |
 | `data/selection.csv` | Original-image selection, labels, and data fingerprints |
 | `data/selected/` | Original JPEG subset, supplied separately or reconstructed from Oxford |
 | `data/augmented/` | 50 generated training images per iteration |
@@ -153,7 +196,7 @@ Exact duplicate detection does not rule out near-duplicate photographs or repeat
 - [Oxford-IIIT Pet dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 - O. M. Parkhi, A. Vedaldi, A. Zisserman, and C. V. Jawahar. *Cats and Dogs*. IEEE CVPR, 2012.
 - [torchvision ResNet-18 documentation](https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.resnet18.html)
+- [Course template repository](https://github.com/patrykbart/synthetic-data-course-template)
+- [Meeting 2 assignment](https://patrykbart.faculty.wmi.amu.edu.pl/teaching/synthetic-data-generation-with-diffusion-models/meeting-2/)
 
 Image attribution and the dataset's CC BY-SA 4.0 terms are described in `DATA_LICENSE.md`. These data terms do not establish a separate license for the project source code.
-
-## Author: Wiktor Wdowczyk

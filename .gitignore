@@ -7,6 +7,8 @@ cache/
 images.tar.gz
 data/selected/
 features.npz
+meeting2_features.npz
+pools/
 .DS_Store
 Thumbs.db
 data/

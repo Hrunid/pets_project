@@ -1,0 +1,5 @@
+-r requirements-features.txt
+accelerate>=1.10,<2
+diffusers>=0.40,<0.41
+safetensors>=0.6,<1
+transformers>=4.55,<6

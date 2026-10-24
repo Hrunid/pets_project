@@ -45,3 +45,14 @@ Cache cech zawiera listę ścieżek i SHA-256 wejść; nieaktualny cache jest od
 - Dane: https://www.robots.ox.ac.uk/~vgg/data/pets/
 - Model: https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.resnet18.html
 - O. M. Parkhi, A. Vedaldi, A. Zisserman, C. V. Jawahar, „Cats and Dogs”, CVPR 2012.
+
+## Meeting 2: generowanie text-to-image
+Rozszerzenie z `meeting2.py` pozostawia przebiegi Meeting 1 bez zmian. Tworzy cztery pule po 110 prób Stable Diffusion 1.5: bazową (30 kroków, guidance 7.5) oraz warianty zmieniające dokładnie jeden parametr (guidance 2, guidance 15 lub 10 kroków). W obrębie porównania nie zmieniają się prompt(y), prompt negatywny, scheduler DPM-Solver, wersja wag ani ziarna; ziarno obrazu `i` wynosi 1000 + `i`. Wariant promptów użytkownik podaje jawnie w poleceniu.
+
+Manifest JSONL zachowuje każdą próbę, w tym błędy i blokady safety checkera. Do treningu dopuszczane są wyłącznie obrazy ze statusem `ok`; kontaktówka pokazuje pierwsze 24 próby. Przed wyborem puli należy wizualnie odnotować błędną rasę/umaszczenie, anatomię, styl ilustracyjny, powtarzalność póz/tła i nieudane próby.
+
+Klasyfikator i 50-obrazowy budżet Meeting 1 nie są zmieniane. W Meeting 2 każda pula wnosi 55 unikalnie losowanych obrazów dla każdego podziału, zgodnie z budżetem z szablonu kursu. Ponieważ w tym repozytorium trening bazowy zawiera 20 Egyptian Mau, po dodaniu 55 powstaje 75 obserwacji tej klasy (a nie 70 jak w szablonie z 15 oryginałami). Zachowujemy zamrożone cechy ResNet-18 i regresję logistyczną, a nie EfficientNet trenowany od nowa.
+
+Pięć sparowanych seedów podziału to 1729, 2718, 31415, 16180 i 57721. Pierwsze trzy odpowiadają podziałom Meeting 1; dwa kolejne rozszerzają ocenę. Regresja logistyczna jest deterministyczna, dlatego pięć powtórzeń w tym wariancie oznacza pięć holdoutów, a nie pięć inicjalizacji modelu. Bazowy klasyfikator real-only jest ponownie dopasowany dla tych samych pięciu podziałów. Wybór puli następuje wyłącznie na podstawie walidacji i kontaktówek; testowane są wyłącznie wybrana pula oraz dopasowany baseline. Wyniki trafiają do `results/meeting2/`, a pule i pełne manifesty do `pools/`.
+
+Generowanie wymaga PyTorch, Diffusers, pobrania wag Stable Diffusion i praktycznie — GPU CUDA; CPU jest niepraktyczny dla 440 obrazów. Na CPU skrypt wymaga jawnego `--allow-cpu`. Zmienne środowiska, konfiguracja modelu, próby błędne i hashe udanych obrazów są zachowywane do odtworzenia eksperymentu. Szczegóły zadania: https://patrykbart.faculty.wmi.amu.edu.pl/teaching/synthetic-data-generation-with-diffusion-models/meeting-2/; repozytorium wzorcowe: https://github.com/patrykbart/synthetic-data-course-template.
