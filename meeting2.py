@@ -1041,7 +1041,12 @@ def main() -> int:
     generate_parser.add_argument(
         "--device", choices=["auto", "cuda", "mps", "cpu"], default="auto"
     )
-    generate_parser.add_argument("--low-vram", action="store_true")
+    generate_parser.add_argument(
+        "--low-vram",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="enable memory-saving options on CUDA (default; use --no-low-vram to disable)",
+    )
     generate_parser.add_argument(
         "--allow-cpu",
         action="store_true",

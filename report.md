@@ -69,3 +69,33 @@ Przykłady: oryginały u góry, augmentacje poniżej.
 Źródła, licencja i protokół: `protocol.md` oraz `DATA_LICENSE.md`.
 
 ## Autor: Wiktor Wdowczyk
+
+## Meeting 2: status realizacji
+
+### Zakres wykonania
+
+Archiwum Oxford-IIIT Pet zostało pobrane. Przygotowano 910 oryginalnych zdjęć, podziały, augmentacje i cechy 1,060 obrazów. Niezależny audyt Meeting 1 zakończył się sukcesem: 9 przebiegów, 18 ewaluacji oraz kontrole identyfikatorów, metryk i liczności.
+
+Stable Diffusion 1.5 działał na CUDA 12.6, karcie NVIDIA GeForce GTX 1060 6GB, w trybie FP16 z CPU offload i attention slicing. Generowanie zostało zatrzymane po prośbie użytkownika; zachowano każdą ukończoną próbę.
+
+| Pula | Zapisane próby | Użyteczne obrazy | Błędy | Safety block | Stan |
+|---|---:|---:|---:|---:|---|
+| `m2-base` | 110 | 110 | 0 | 0 | kompletna |
+| `m2-guidance-2` | 11 | 11 | 0 | 0 | przerwana; pula niekompletna |
+| `m2-guidance-15` | 0 | 0 | 0 | 0 | nieuruchomiona |
+| `m2-steps-10` | 0 | 0 | 0 | 0 | nieuruchomiona |
+
+Wszystkie 121 zakończonych prób mają status `ok`. Manifesty, ustawienia, obrazy i kontaktówki są w `pools/`; pliki pul nie są ignorowane przez Git. Kontaktówka guidance-2 pokazuje 11 wygenerowanych przykładów, a pozostałe miejsca są puste, bo wariant przerwano.
+
+### Obserwacje wizualne
+
+- Baza zawiera kilka wiarygodnych srebrnych kotów w cętki, ale również pręgowane koty domowe, nieregularne lub przesadzone wzory, zniekształcone pyski i oczy oraz zbyt ciasne kadry.
+- W 11 próbkach guidance 2 widać tę samą niejednorodność: część obrazów ma cętki, ale kilka przedstawia wyraźnie pręgowane umaszczenie lub kota, którego rasy nie da się wiarygodnie rozpoznać. Pojawiają się też problemy proporcji pyska i ujęcia portretowe.
+- Pozy i tła są zróżnicowane; wizualna różnorodność nie gwarantuje jednak poprawnej rasy ani przydatności treningowej.
+- Są to jakościowe obserwacje z kontaktówek, nie formalna ocena ani wynik klasyfikatora. Kontaktówki: [baza](pools/m2-base/contact-sheet.jpg), [guidance 2](pools/m2-guidance-2/contact-sheet.jpg).
+
+### Wyniki modelu i ograniczenia
+
+Nie uruchomiono `meeting2.py train` ani `meeting2.py test`. Nie ma zatem metryk walidacyjnych lub testowych dla syntetycznych zdjęć, nie wybrano puli do przeniesienia do Meeting 3 i nie można stwierdzić, czy generowane obrazy poprawiają recall Egyptian Mau albo macro-F1. Niepełna pula guidance 2 nie powinna być używana do treningu zgodnego z protokołem. Wyniki liczbowe w poprzednich sekcjach tego pliku dotyczą wyłącznie Meeting 1.
+
+Zakres wykonania nie spełnia pełnego checkpointu kursu: brakuje dwóch wariantów, porównań walidacyjnych, uzasadnionego wyboru i sparowanego testu. Pełny plan, parametry i ograniczenia opisuje [`protocol.md`](protocol.md).

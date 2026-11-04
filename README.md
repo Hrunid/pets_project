@@ -113,12 +113,24 @@ Install the additional dependencies once:
 python -m pip install -r requirements-meeting2.txt
 ```
 
-Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a hosted GPU environment; Internet access and permission to download the Stable Diffusion 1.5 weights from Hugging Face are required. If the ResNet-18 weights are not already cached, training also downloads them. Generation refuses to run on CPU unless explicitly opted in with `--allow-cpu`. `--low-vram` enables memory-saving options on supported CUDA GPUs.
+On Windows with an NVIDIA GPU, replace the CPU-only PyTorch packages installed above with the CUDA 12.6 build:
+
+```text
+python -m pip install --index-url https://download.pytorch.org/whl/cu126 torch==2.14.1+cu126 torchvision==0.29.1+cu126
+```
+
+Confirm CUDA is available before generating:
+
+```text
+python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"
+```
+
+Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a hosted GPU environment; Internet access and permission to download the Stable Diffusion 1.5 weights from Hugging Face are required. If the ResNet-18 weights are not already cached, training also downloads them. Generation refuses to run on CPU unless explicitly opted in with `--allow-cpu`. Memory-saving CPU offload and attention slicing are enabled by default; use `--no-low-vram` only when the GPU has enough free VRAM.
 
 1. Generate the base pool and three controlled variations. Write the prompt(s) yourself; repeat `--prompt` to cycle through the same prompts in every pool. The base uses 30 steps and guidance 7.5; each other pool changes only guidance or steps.
 
    ```text
-   python meeting2.py generate --prompt "Photorealistic photograph of a single Egyptian Mau cat with a short silver spotted coat and green eyes, natural proportions, soft daylight."
+   python meeting2.py generate --device cuda --low-vram --prompt "Photorealistic photograph of a single Egyptian Mau cat with a short silver spotted coat and green eyes, natural proportions, soft daylight."
    ```
 
    This creates `m2-base`, `m2-guidance-2`, `m2-guidance-15`, and `m2-steps-10` under `pools/`, with 110 attempts per pool, a settings file, a JSONL manifest, and a contact sheet. The generator records errors and safety-blocked attempts instead of silently discarding them. Resume with the same command and settings; existing attempt records are kept.
@@ -142,7 +154,9 @@ Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a host
 
    Do not use test results to choose or change the pool. This command evaluates only the selected pool and its matched real-only baseline, then updates `results/meeting2/report.md` and the test comparison plot.
 
-Generated pools, manifests, feature caches, and results are local experiment outputs and are ignored by Git. Keep them when sharing the completed experiment. `results/meeting2/report.md` contains validation tables, paired changes, contact-sheet links, and (after selection) test results; `pools/<name>/manifest.jsonl` records every generation attempt and its parameters.
+Generated images, manifests, settings, and contact sheets under `pools/` are included in the repository and are not ignored by Git. Feature caches and experiment results remain local ignored outputs. A complete Meeting 2 report is written to `results/meeting2/report.md` after training; the current execution status and visual observations are recorded in [`report.md`](report.md#meeting-2-status-realizacji).
+
+**Execution status (2026-11-04):** the Oxford-IIIT Pet archive was downloaded and 910 original images plus the 1,060-image feature cache were prepared; the Meeting 1 audit passed. Stable Diffusion 1.5 generated 110/110 base images and 11/110 guidance-2 images on the GTX 1060. All 121 completed attempts succeeded; no safety blocks or generation errors were recorded. Generation was then stopped, so guidance 2 is partial and guidance 15, the 10-step variant, validation, pool selection, and test were not run. No classifier-performance claim is made for Meeting 2. See [`report.md`](report.md#meeting-2-status-realizacji) for the contact-sheet observations and limits.
 
 ## Recorded results
 
