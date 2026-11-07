@@ -113,6 +113,8 @@ Install the additional dependencies once:
 python -m pip install -r requirements-meeting2.txt
 ```
 
+Meeting 2 commands use `pools/` by default. If pools are stored elsewhere inside the project, pass the same `--pools-dir` value to `generate`, `train`, `report`, and `test`; for example, use `--pools-dir data/pools`.
+
 On Windows with an NVIDIA GPU, replace the CPU-only PyTorch packages installed above with the CUDA 12.6 build:
 
 ```text
@@ -130,7 +132,7 @@ Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a host
 1. Generate the base pool and three controlled variations. Write the prompt(s) yourself; repeat `--prompt` to cycle through the same prompts in every pool. The base uses 30 steps and guidance 7.5; each other pool changes only guidance or steps.
 
    ```text
-   python meeting2.py generate --device cuda --low-vram --prompt "Photorealistic photograph of a single Egyptian Mau cat with a short silver spotted coat and green eyes, natural proportions, soft daylight."
+   python meeting2.py generate --pools-dir data/pools --device cuda --low-vram --prompt "Photorealistic photograph of a single Egyptian Mau cat with a short silver spotted coat and green eyes, natural proportions, soft daylight."
    ```
 
    This creates `m2-base`, `m2-guidance-2`, `m2-guidance-15`, and `m2-steps-10` under `pools/`, with 110 attempts per pool, a settings file, a JSONL manifest, and a contact sheet. The generator records errors and safety-blocked attempts instead of silently discarding them. Resume with the same command and settings; existing attempt records are kept.
@@ -140,8 +142,8 @@ Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a host
 3. Train the real-only baseline and all generated pools, then inspect the validation report and paired comparison plot:
 
    ```text
-   python meeting2.py train
-   python meeting2.py report
+   python meeting2.py train --pools-dir data/pools
+   python meeting2.py report --pools-dir data/pools
    ```
 
    Each pool adds 55 randomly selected, usable images per split. Five paired holdout seeds are used; the first three reuse the Meeting 1 seeds and the other two extend the comparison. Since logistic regression is deterministic, these are five data splits rather than five random model initializations. The existing data has 20 Egyptian Mau training images, so adding 55 produces 75 minority observations; this differs from the template's 15+55 balance. The baseline is refit on the same five splits for paired comparisons.
@@ -149,14 +151,14 @@ Text-to-image generation is very slow on a CPU. Use a CUDA-capable GPU or a host
 4. Choose one pool using **validation results and contact-sheet review**, and provide your justification when evaluating its test set. For example:
 
    ```text
-   python meeting2.py test --pool m2-guidance-2 --reason "Highest validation Mau recall without reducing macro-F1; contact sheet shows mostly plausible spotted cats."
+   python meeting2.py test --pools-dir data/pools --pool m2-guidance-2 --reason "Highest validation Mau recall without reducing macro-F1; contact sheet shows mostly plausible spotted cats."
    ```
 
    Do not use test results to choose or change the pool. This command evaluates only the selected pool and its matched real-only baseline, then updates `results/meeting2/report.md` and the test comparison plot.
 
-Generated images, manifests, settings, and contact sheets under `pools/` are included in the repository and are not ignored by Git. Feature caches and experiment results remain local ignored outputs. A complete Meeting 2 report is written to `results/meeting2/report.md` after training; the current execution status and visual observations are recorded in [`report.md`](report.md#meeting-2-status-realizacji).
+Generated images, manifests, settings, and contact sheets in `data/pools/` are included in the repository and are not ignored by Git. Other local data, feature caches, and experiment results remain ignored. A complete Meeting 2 report is written to `results/meeting2/report.md`; a summary of the completed run and visual observations is recorded in [`report.md`](report.md#meeting-2-status-realizacji).
 
-**Execution status (2026-11-04):** the Oxford-IIIT Pet archive was downloaded and 910 original images plus the 1,060-image feature cache were prepared; the Meeting 1 audit passed. Stable Diffusion 1.5 generated 110/110 base images and 11/110 guidance-2 images on the GTX 1060. All 121 completed attempts succeeded; no safety blocks or generation errors were recorded. Generation was then stopped, so guidance 2 is partial and guidance 15, the 10-step variant, validation, pool selection, and test were not run. No classifier-performance claim is made for Meeting 2. See [`report.md`](report.md#meeting-2-status-realizacji) for the contact-sheet observations and limits.
+**Execution status (2026-11-07):** all four Stable Diffusion 1.5 pools were generated in `data/pools`: 110 attempts each, 439 usable images and one safety-blocked attempt, with no generation errors. Five paired validation splits selected `m2-guidance-2` (87.00% mean Egyptian Mau recall and 87.93% macro-F1); its contact sheet was also reviewed. On the held-out test splits, this pool scored 83.33% ± 4.08% Mau recall and 86.81% ± 1.19% macro-F1, versus 62.67% ± 9.25% and 84.13% ± 1.59% for the matched real-only baseline. These are results for this repository's frozen ResNet-18 and logistic-regression protocol, not the template's EfficientNet workflow. Detailed metrics, paired comparisons, and plots are in the local, Git-ignored `results/meeting2/` directory; see [`report.md`](report.md#meeting-2-status-realizacji) for the summary and limitations.
 
 ## Recorded results
 

@@ -74,28 +74,35 @@ Przykłady: oryginały u góry, augmentacje poniżej.
 
 ### Zakres wykonania
 
-Archiwum Oxford-IIIT Pet zostało pobrane. Przygotowano 910 oryginalnych zdjęć, podziały, augmentacje i cechy 1,060 obrazów. Niezależny audyt Meeting 1 zakończył się sukcesem: 9 przebiegów, 18 ewaluacji oraz kontrole identyfikatorów, metryk i liczności.
-
-Stable Diffusion 1.5 działał na CUDA 12.6, karcie NVIDIA GeForce GTX 1060 6GB, w trybie FP16 z CPU offload i attention slicing. Generowanie zostało zatrzymane po prośbie użytkownika; zachowano każdą ukończoną próbę.
+Przygotowano 910 oryginalnych zdjęć i istniejący cache cech; niezależny audyt Meeting 1 zakończył się sukcesem. Dla Meeting 2 wygenerowano pule Stable Diffusion 1.5 na GPU w Colabie. Następnie lokalnie wyekstrahowano cechy ResNet-18, wykonano pięć sparowanych przebiegów walidacyjnych dla każdej puli i przeprowadzono test wyłącznie dla puli wybranej na podstawie walidacji.
 
 | Pula | Zapisane próby | Użyteczne obrazy | Błędy | Safety block | Stan |
 |---|---:|---:|---:|---:|---|
 | `m2-base` | 110 | 110 | 0 | 0 | kompletna |
-| `m2-guidance-2` | 11 | 11 | 0 | 0 | przerwana; pula niekompletna |
-| `m2-guidance-15` | 0 | 0 | 0 | 0 | nieuruchomiona |
-| `m2-steps-10` | 0 | 0 | 0 | 0 | nieuruchomiona |
+| `m2-guidance-2` | 110 | 109 | 0 | 1 | kompletna; 109 obrazów dopuszczonych do użycia |
+| `m2-guidance-15` | 110 | 110 | 0 | 0 | kompletna |
+| `m2-steps-10` | 110 | 110 | 0 | 0 | kompletna |
 
-Wszystkie 121 zakończonych prób mają status `ok`. Manifesty, ustawienia, obrazy i kontaktówki są w `pools/`; pliki pul nie są ignorowane przez Git. Kontaktówka guidance-2 pokazuje 11 wygenerowanych przykładów, a pozostałe miejsca są puste, bo wariant przerwano.
+Łącznie: 440 prób, 439 użytecznych obrazów, jeden safety block i zero błędów generowania. Obrazy, manifesty, ustawienia i kontaktówki znajdują się w `data/pools/` i są uwzględnione w repozytorium.
 
 ### Obserwacje wizualne
 
-- Baza zawiera kilka wiarygodnych srebrnych kotów w cętki, ale również pręgowane koty domowe, nieregularne lub przesadzone wzory, zniekształcone pyski i oczy oraz zbyt ciasne kadry.
-- W 11 próbkach guidance 2 widać tę samą niejednorodność: część obrazów ma cętki, ale kilka przedstawia wyraźnie pręgowane umaszczenie lub kota, którego rasy nie da się wiarygodnie rozpoznać. Pojawiają się też problemy proporcji pyska i ujęcia portretowe.
-- Pozy i tła są zróżnicowane; wizualna różnorodność nie gwarantuje jednak poprawnej rasy ani przydatności treningowej.
-- Są to jakościowe obserwacje z kontaktówek, nie formalna ocena ani wynik klasyfikatora. Kontaktówki: [baza](pools/m2-base/contact-sheet.jpg), [guidance 2](pools/m2-guidance-2/contact-sheet.jpg).
+- Większość wygenerowanych obrazów jest istotnie zdeformowana albo zawiera poważnie uszkodzone cechy: zniekształcone pyski i oczy, nieprawidłową liczbę lub układ kończyn, zaburzone proporcje ciała, nienaturalne wzory sierści albo niepoprawne połączenia części ciała. W wielu przypadkach wada obejmuje centralny obiekt, a nie tylko drobny szczegół czy kadr, przez co obraz nie wygląda jak wiarygodna fotografia kota.
+- Część próbek ma poprawniejszą sylwetkę lub rozpoznawalne umaszczenie Egyptian Mau, ale nie zmienia to ogólnie niskiej jakości wizualnej pul. Występują też koty pręgowane lub o niejednoznacznej rasie oraz ciasne kadry. Zgodność z promptem jest ograniczona; ocena wizualna jest jakościowa i wskazuje, że większość obrazów nie nadaje się do użycia jako realistyczne przykłady treningowe bez selekcji lub odfiltrowania.
+- Kontaktówki: [baza](data/pools/m2-base/contact-sheet.jpg), [guidance 2](data/pools/m2-guidance-2/contact-sheet.jpg), [guidance 15](data/pools/m2-guidance-15/contact-sheet.jpg), [10 kroków](data/pools/m2-steps-10/contact-sheet.jpg).
 
 ### Wyniki modelu i ograniczenia
 
-Nie uruchomiono `meeting2.py train` ani `meeting2.py test`. Nie ma zatem metryk walidacyjnych lub testowych dla syntetycznych zdjęć, nie wybrano puli do przeniesienia do Meeting 3 i nie można stwierdzić, czy generowane obrazy poprawiają recall Egyptian Mau albo macro-F1. Niepełna pula guidance 2 nie powinna być używana do treningu zgodnego z protokołem. Wyniki liczbowe w poprzednich sekcjach tego pliku dotyczą wyłącznie Meeting 1.
+Klasyfikator pozostał zgodny z metodą tego repo: zamrożony ResNet-18 ImageNet i regresja logistyczna. Każda pula wnosi 55 obrazów do danego splitu; ewaluacja objęła pięć sparowanych seedów. Wyniki walidacji (średnia ± odchylenie standardowe):
 
-Zakres wykonania nie spełnia pełnego checkpointu kursu: brakuje dwóch wariantów, porównań walidacyjnych, uzasadnionego wyboru i sparowanego testu. Pełny plan, parametry i ograniczenia opisuje [`protocol.md`](protocol.md).
+| Warunek | Recall Egyptian Mau | Macro-F1 | Accuracy |
+|---|---:|---:|---:|
+| Baseline tylko na danych rzeczywistych | 69.00% ± 9.62% | 86.97% ± 1.79% | 87.00% ± 1.90% |
+| `m2-base` | 70.00% ± 10.61% | 86.59% ± 1.76% | 86.62% ± 1.91% |
+| `m2-guidance-2` | **87.00% ± 5.70%** | **87.93% ± 1.03%** | **88.00% ± 1.03%** |
+| `m2-guidance-15` | 66.00% ± 12.94% | 85.78% ± 1.95% | 85.88% ± 2.10% |
+| `m2-steps-10` | 73.00% ± 7.58% | 86.84% ± 1.50% | 86.88% ± 1.65% |
+
+Na podstawie wyłącznie walidacji i kontaktówek wybrano `m2-guidance-2`: uzyskał najwyższy średni recall Mau i macro-F1. Jego pięć splitów testowych dało recall **83.33% ± 4.08%**, macro-F1 **86.81% ± 1.19%** i accuracy **86.75% ± 1.26%**. Sparowany baseline testowy osiągnął odpowiednio **62.67% ± 9.25%**, **84.13% ± 1.59%** i **84.17% ± 1.67%**. Test nie był użyty do wyboru puli.
+
+To wynik eksperymentu na ustalonych splitach i z klasyfikatorem tego repozytorium; nie dowodzi ogólnej przewagi modeli ani nie jest bezpośrednio porównywalny z template'owym fine-tuningiem EfficientNet. W szczególności kontaktówki wskazują, że jakość poszczególnych syntetycznych zdjęć jest nierówna. Pełny raport, predykcje, metryki sparowane i wykresy pozostają w lokalnym, ignorowanym przez Git `results/meeting2/`. Protokół i jego ograniczenia opisuje [`protocol.md`](protocol.md).

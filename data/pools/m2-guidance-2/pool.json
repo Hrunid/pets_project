@@ -1,0 +1,26 @@
+{
+  "name": "m2-guidance-2",
+  "mode": "t2i",
+  "model": "sd15",
+  "model_id": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+  "model_revision": "451f4fe16113bff5a5d2269ed5ad43b0592e9a14",
+  "prompts": [
+    "Photorealistic photograph of a single Egyptian Mau cat with a short silver spotted coat and green eyes, natural proportions, soft daylight."
+  ],
+  "negative_prompt": "illustration, painting, cartoon, text, watermark, multiple cats, deformed animal, extra limbs",
+  "steps": 30,
+  "guidance": 2.0,
+  "scheduler": "dpm",
+  "seed": 1000,
+  "count": 110,
+  "width": 512,
+  "height": 512,
+  "device": "cuda",
+  "gpu": "Tesla T4",
+  "dtype": "float16",
+  "torch": "2.14.1+cu130",
+  "diffusers": "0.40.0",
+  "python": "3.13.16",
+  "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+  "low_vram": true
+}

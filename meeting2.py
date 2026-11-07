@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import platform
 import random
 import sys
@@ -72,6 +73,10 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def pool_path_from_root(path: Path) -> str:
+    return path.relative_to(ROOT).as_posix()
 
 
 def settings_for_pool(name: str, prompts: list[str], args: argparse.Namespace) -> dict:
@@ -425,7 +430,7 @@ def load_features(pool_names: list[str], threads: int):
     for name in pool_names:
         records = pool_records(name)
         for record in records:
-            path = f"pools/{name}/{record['file']}"
+            path = pool_path_from_root(POOLS_DIR / name / record["file"])
             image_paths.append(path)
             image_hashes.append(record["sha256"])
             image_ids[(name, record["sample_id"])] = len(image_paths) - 1
@@ -568,7 +573,9 @@ def train(args: argparse.Namespace) -> None:
                 train_labels.extend([4] * len(selected))
                 observations.extend(
                     {
-                        "path": f"pools/{condition}/{record['file']}",
+                        "path": pool_path_from_root(
+                            POOLS_DIR / condition / record["file"]
+                        ),
                         "label": 4,
                     }
                     for record in selected
@@ -793,12 +800,15 @@ def make_report() -> None:
     for name in POOL_SETTINGS:
         contact_sheet = POOLS_DIR / name / "contact-sheet.jpg"
         if contact_sheet.is_file():
+            contact_sheet_link = Path(
+                os.path.relpath(contact_sheet, RESULTS_DIR)
+            ).as_posix()
             text.extend(
                 [
                     "",
                     f"## Visual review: {name}",
                     "",
-                    f"![Contact sheet: {name}](../../pools/{name}/contact-sheet.jpg)",
+                    f"![Contact sheet: {name}]({contact_sheet_link})",
                     "",
                     "Review the sheet for wrong breed or coat, implausible anatomy, "
                     "illustration-like appearance, repeated poses/backgrounds, and "
@@ -1017,12 +1027,20 @@ def test_pool(args: argparse.Namespace) -> None:
 
 
 def main() -> int:
+    global POOLS_DIR
+
     parser = argparse.ArgumentParser(
         description="Meeting 2 workflow: generate pools, train on validation, test a chosen pool."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     generate_parser = subparsers.add_parser(
         "generate", help="generate 110-image base and setting-variation pools"
+    )
+    generate_parser.add_argument(
+        "--pools-dir",
+        type=Path,
+        default=Path("pools"),
+        help="pool directory, relative to the project root unless absolute",
     )
     generate_parser.add_argument(
         "--prompt",
@@ -1056,17 +1074,46 @@ def main() -> int:
         "train", help="train validation runs for baseline and generated pools"
     )
     train_parser.add_argument(
+        "--pools-dir",
+        type=Path,
+        default=Path("pools"),
+        help="pool directory, relative to the project root unless absolute",
+    )
+    train_parser.add_argument(
         "--pools", nargs="+", choices=["all", *POOL_SETTINGS], default=["all"]
     )
     train_parser.add_argument("--threads", type=int, default=4)
     test_parser = subparsers.add_parser(
         "test", help="test one pool chosen from validation and contact sheets"
     )
+    test_parser.add_argument(
+        "--pools-dir",
+        type=Path,
+        default=Path("pools"),
+        help="pool directory, relative to the project root unless absolute",
+    )
     test_parser.add_argument("--pool", required=True, choices=tuple(POOL_SETTINGS))
     test_parser.add_argument("--reason", required=True)
     test_parser.add_argument("--threads", type=int, default=4)
-    subparsers.add_parser("report", help="regenerate the validation report and plots")
+    report_parser = subparsers.add_parser(
+        "report", help="regenerate the validation report and plots"
+    )
+    report_parser.add_argument(
+        "--pools-dir",
+        type=Path,
+        default=Path("pools"),
+        help="pool directory, relative to the project root unless absolute",
+    )
     args = parser.parse_args()
+
+    requested_pool_dir = (
+        args.pools_dir if args.pools_dir.is_absolute() else ROOT / args.pools_dir
+    )
+    POOLS_DIR = Path(os.path.abspath(requested_pool_dir))
+    try:
+        POOLS_DIR.relative_to(ROOT)
+    except ValueError:
+        parser.error("--pools-dir must be inside the project directory.")
 
     if args.command == "generate":
         if args.count != IMAGE_COUNT:

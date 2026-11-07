@@ -19,6 +19,8 @@ features.npz
 meeting2_features.npz
 .DS_Store
 Thumbs.db
-data/
+data/*
+!data/pools/
+!data/pools/**
 results/
 manifests/
